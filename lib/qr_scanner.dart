@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_qrcode_reader/models/ItemModel.dart';
 import 'package:flutter_qrcode_reader/result_screen.dart';
+import 'package:flutter_qrcode_reader/scanned_items.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_scanner_overlay/qr_scanner_overlay.dart';
 
@@ -14,13 +16,30 @@ class QRScanner extends StatefulWidget {
 
 class _QRScannerState extends State<QRScanner> {
   bool isScanCompleted = false;
-  bool isFlashOn = false;
-  bool isFrontCamera = false;
+  List<ItemModel> itemModels = [];
 
-  MobileScannerController cameraController = MobileScannerController();
+  MobileScannerController cameraController = MobileScannerController(
+    detectionSpeed: DetectionSpeed.noDuplicates,
+    detectionTimeoutMs: 250,
+  );
 
   void closeScreen() {
     isScanCompleted = false;
+  }
+
+  bool isValuePresent(List<ItemModel> itemModels, String code) {
+    for (var item in itemModels) {
+      if (item.qrCode == code) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @override
+  void dispose() {
+    cameraController.dispose();
+    super.dispose();
   }
 
   @override
@@ -31,25 +50,35 @@ class _QRScannerState extends State<QRScanner> {
       appBar: AppBar(
         actions: [
           IconButton(
-              onPressed: () {
-                setState(() {
-                  isFlashOn = !isFlashOn;
-                });
-                if (isFlashOn) {
-                  cameraController.toggleTorch();
+            color: Colors.white,
+            icon: ValueListenableBuilder(
+              valueListenable: cameraController.torchState,
+              builder: (context, state, child) {
+                switch (state) {
+                  case TorchState.off:
+                    return const Icon(Icons.flash_off, color: Colors.grey);
+                  case TorchState.on:
+                    return const Icon(Icons.flash_on, color: Colors.blue);
                 }
               },
-              icon: Icon(Icons.flash_on, color: isFlashOn? Colors.blue : Colors.grey)),
+            ),
+            onPressed: () => cameraController.toggleTorch(),
+          ),
           IconButton(
-              onPressed: () {
-                setState(() {
-                  isFrontCamera = !isFrontCamera;
-                });
-                if (isFrontCamera) {
-                  cameraController.switchCamera();
+            color: Colors.white,
+            icon: ValueListenableBuilder(
+              valueListenable: cameraController.cameraFacingState,
+              builder: (context, state, child) {
+                switch (state) {
+                  case CameraFacing.front:
+                    return const Icon(Icons.camera_front, color: Colors.blue);
+                  case CameraFacing.back:
+                    return const Icon(Icons.camera_rear, color: Colors.grey);
                 }
               },
-              icon:Icon(Icons.camera_front, color: isFlashOn? Colors.blue: Colors.grey))
+            ),
+            onPressed: () => cameraController.switchCamera(),
+          )
         ],
         iconTheme: const IconThemeData(color: Colors.black87),
         centerTitle: true,
@@ -67,91 +96,111 @@ class _QRScannerState extends State<QRScanner> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Expanded(
-              child: Column(
-                children: [
-                  Text(
-                    'Place the QR code in the area',
-                    style: TextStyle(
-                        color: Colors.black87,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1),
+            const Column(
+              children: [
+                Text(
+                  'Place the QR code in the area',
+                  style: TextStyle(
+                      color: Colors.black87,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1),
+                ),
+                SizedBox(
+                  height: 10,
+                ),
+                Text(
+                  'Scanning will be started automatically',
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontSize: 16,
                   ),
-                  SizedBox(
-                    height: 10,
-                  ),
-                  Text(
-                    'Scanning will be started automatically',
-                    style: TextStyle(
-                      color: Colors.black54,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Expanded(
-                flex: 4,
-                child: Center(
-                  child: Container(
-                    height: 300,
-                    width: 300,
-                    alignment: Alignment.center,
-                    child: Stack(
-                      children: [
-                        Center(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: Container(
-                              height: 280,
-                              width: 280,
-                              decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10)),
-                              alignment: Alignment.center,
-                              child: MobileScanner(
-                                  controller: cameraController,
-                                  onDetect: (capture) {
-                                    if (!isScanCompleted) {
-                                      final List<Barcode> barcodes =
-                                          capture.barcodes;
-                                      for (final barcode in barcodes) {
-                                        String code = barcode.rawValue ?? '---';
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => ResultScreen(
-                                              closeScreen: closeScreen,
-                                              code: code,
-                                            ),
-                                          ),
-                                        );
-                                      }
+            const SizedBox(
+              height: 20,
+            ),
+            Container(
+              alignment: Alignment.center,
+              child: Center(
+                child: Container(
+                  height: 300,
+                  width: 300,
+                  alignment: Alignment.center,
+                  child: Stack(
+                    children: [
+                      Center(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            height: 280,
+                            width: 280,
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10)),
+                            alignment: Alignment.center,
+                            child: MobileScanner(
+                                controller: cameraController,
+                                onDetect: (capture) {
+                                  final List<Barcode> barcodes =
+                                      capture.barcodes;
+
+                                  for (final barcode in barcodes) {
+                                    String code = barcode.rawValue ?? '---';
+                                   
+
+                                    bool containsValue =
+                                        isValuePresent(itemModels, code);
+
+                                    if (containsValue) {
+                                      return;
+                                    } else {
+                                      itemModels.add(ItemModel(
+                                        qrCode: code,
+                                        quantity: 1,
+                                      ));
                                     }
-                                  }),
-                            ),
+
+                                    debugPrint(code);
+                                    setState(() {});
+
+                                    // Navigator.push(
+                                    //   context,
+                                    //   MaterialPageRoute(
+                                    //     builder: (context) => ResultScreen(
+                                    //       closeScreen: closeScreen,
+                                    //       code: code,
+                                    //     ),
+                                    //   ),
+                                    // );
+                                  }
+                                }),
                           ),
                         ),
-                        QRScannerOverlay(
-                          borderColor: Colors.blue,
-                          overlayColor: bgColor,
-                          scanAreaHeight: 300,
-                          scanAreaWidth: 300,
-                        )
-                      ],
-                    ),
+                      ),
+                      QRScannerOverlay(
+                        borderColor: Colors.blue,
+                        overlayColor: bgColor,
+                        scanAreaHeight: 300,
+                        scanAreaWidth: 300,
+                      )
+                    ],
                   ),
-                )),
-            Expanded(
-              child: Container(
-                alignment: Alignment.center,
-                child: const Text(
-                  'Developed by Paul',
-                  style: TextStyle(
-                    color: Colors.black87,
-                    fontSize: 14,
-                    letterSpacing: 1,
-                  ),
+                ),
+              ),
+            ),
+            const SizedBox(
+              height: 10,
+            ),
+            Expanded(child: ScannedItems(itemList: itemModels)),
+            Container(
+              alignment: Alignment.center,
+              child: const Text(
+                'Developed by Paul',
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontSize: 14,
+                  letterSpacing: 1,
                 ),
               ),
             )
