@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_qrcode_reader/models/ItemModel.dart';
-import 'package:flutter_qrcode_reader/result_screen.dart';
+
 import 'package:flutter_qrcode_reader/scanned_items.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_scanner_overlay/qr_scanner_overlay.dart';
@@ -18,9 +18,9 @@ class _QRScannerState extends State<QRScanner> {
   bool isScanCompleted = false;
   List<ItemModel> itemModels = [];
 
+
   MobileScannerController cameraController = MobileScannerController(
     detectionSpeed: DetectionSpeed.noDuplicates,
-    detectionTimeoutMs: 250,
   );
 
   void closeScreen() {
@@ -140,6 +140,7 @@ class _QRScannerState extends State<QRScanner> {
                                 borderRadius: BorderRadius.circular(10)),
                             alignment: Alignment.center,
                             child: MobileScanner(
+                                startDelay: true,
                                 controller: cameraController,
                                 onDetect: (capture) {
                                   final List<Barcode> barcodes =
@@ -147,7 +148,6 @@ class _QRScannerState extends State<QRScanner> {
 
                                   for (final barcode in barcodes) {
                                     String code = barcode.rawValue ?? '---';
-                                   
 
                                     bool containsValue =
                                         isValuePresent(itemModels, code);
@@ -155,14 +155,14 @@ class _QRScannerState extends State<QRScanner> {
                                     if (containsValue) {
                                       return;
                                     } else {
-                                      itemModels.add(ItemModel(
-                                        qrCode: code,
-                                        quantity: 1,
-                                      ));
+                                      setState(() {
+                                        itemModels.add(ItemModel(
+                                          qrCode: code,
+                                          quantity: 1,
+                                          
+                                        ));
+                                      });
                                     }
-
-                                    debugPrint(code);
-                                    setState(() {});
 
                                     // Navigator.push(
                                     //   context,

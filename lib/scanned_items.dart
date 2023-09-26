@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_qrcode_reader/models/ItemModel.dart';
+import 'package:flutter_qrcode_reader/result_screen.dart';
 
 class ScannedItems extends StatefulWidget {
-  final List itemList;
+  final List<ItemModel> itemList;
 
   const ScannedItems({super.key, required this.itemList});
-
   @override
   State<ScannedItems> createState() => _ScannedItemsState();
 }
@@ -18,7 +18,17 @@ class _ScannedItemsState extends State<ScannedItems> {
         itemBuilder: (BuildContext context, int index) {
           return ListTile(
             leading: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ResultScreen(
+                      index:index,
+                      item: widget.itemList[index]
+                    ),
+                  ),
+                );
+              },
               child: const Text('View item'),
             ),
             trailing: SizedBox(
@@ -27,13 +37,24 @@ class _ScannedItemsState extends State<ScannedItems> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      setState(() {
+                        if (widget.itemList[index].quantity >= 1) {
+                          widget.itemList[index].quantity--;
+                        }
+                        return;
+                      });
+                    },
                     icon: const Icon(
                       Icons.remove,
                     ),
                   ),
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      setState(() {
+                        widget.itemList[index].quantity++;
+                      });
+                    },
                     icon: const Icon(
                       Icons.add,
                     ),
@@ -42,7 +63,7 @@ class _ScannedItemsState extends State<ScannedItems> {
               ),
             ),
             title: Text("Item ${index + 1}"),
-            subtitle: const Text('1 Qty'),
+            subtitle: Text('${widget.itemList[index].quantity} qty'),
           );
         });
   }

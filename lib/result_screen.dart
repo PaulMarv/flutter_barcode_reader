@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_qrcode_reader/models/ItemModel.dart';
 import 'package:flutter_qrcode_reader/qr_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class ResultScreen extends StatelessWidget {
-  final String code;
-  final Function() closeScreen;
+  final int index;
+  final ItemModel item;
 
-  const ResultScreen(
-      {super.key, required this.closeScreen, required this.code});
+  const ResultScreen({super.key, required this.index, required this.item});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +17,6 @@ class ResultScreen extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           onPressed: () {
-            closeScreen();
             Navigator.pop(context);
           },
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
@@ -38,9 +37,26 @@ class ResultScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Text('Item ${index + 1}',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16
+            ),),
+            const SizedBox(
+              height: 5,
+            ),
+            Text('Quantity: ${item.quantity}',
+              style: const TextStyle(
+
+                fontSize: 12
+              ),
+            ),
+            const SizedBox(
+              height: 20,
+            ),
             //QR CODE HERE
             QrImageView(
-              data: code,
+              data: item.qrCode,
               size: 150,
               version: QrVersions.auto,
             ),
@@ -57,7 +73,7 @@ class ResultScreen extends StatelessWidget {
               height: 10,
             ),
             Text(
-              code,
+              item.qrCode,
               textAlign: TextAlign.center,
               style: const TextStyle(
                   color: Colors.black87, fontSize: 16, letterSpacing: 1),
@@ -72,7 +88,7 @@ class ResultScreen extends StatelessWidget {
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
                 onPressed: () {
                   Clipboard.setData(
-                    ClipboardData(text: code),
+                    ClipboardData(text: item.qrCode),
                   );
                 },
                 child: const Text(
